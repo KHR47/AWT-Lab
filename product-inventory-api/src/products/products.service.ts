@@ -10,104 +10,72 @@ import { PartialUpdateProductDto } from './dto/partial-update-product.dto';
 export class ProductsService {
   constructor(
     @InjectRepository(Products)
-    private productsRepo: Repository<Products>,
+    private repo: Repository<Products>,
   ) {}
 
   async create(dto: CreateProductDto) {
-    const product = this.productsRepo.create(dto);
-    await this.productsRepo.save(product);
+    const product = this.repo.create(dto);
+    await this.repo.save(product);
 
-    return {
-      message: 'Product created successfully',
-      data: product,
-    };
+    return { message: 'Product created', data: product };
   }
 
   async findAll() {
-    const data = await this.productsRepo.find({
+    const data = await this.repo.find({
       order: { createdAt: 'DESC' },
     });
 
-    return {
-      message: 'All products fetched',
-      count: data.length,
-      data,
-    };
+    return { message: 'All products', count: data.length, data };
   }
 
   async findOne(id: number) {
-    const product = await this.productsRepo.findOne({ where: { id } });
+    const product = await this.repo.findOne({ where: { id } });
 
-    if (!product) {
-      throw new NotFoundException(`Product with id ${id} not found`);
-    }
+    if (!product) throw new NotFoundException('Product not found');
 
-    return {
-      message: 'Product fetched',
-      data: product,
-    };
+    return { message: 'Product found', data: product };
   }
 
   async update(id: number, dto: PartialUpdateProductDto) {
-    await this.productsRepo.update(id, dto);
+    await this.repo.update(id, dto);
     return this.findOne(id);
   }
 
   async replace(id: number, dto: UpdateProductDto) {
-    await this.productsRepo.update(id, dto);
+    await this.repo.update(id, dto);
     return this.findOne(id);
   }
 
   async remove(id: number) {
-    const product = await this.productsRepo.findOne({ where: { id } });
+    const product = await this.repo.findOne({ where: { id } });
 
-    if (!product) {
-      throw new NotFoundException(`Product with id ${id} not found`);
-    }
+    if (!product) throw new NotFoundException('Product not found');
 
-    await this.productsRepo.delete(id);
+    await this.repo.delete(id);
 
-    return {
-      message: 'Product deleted successfully',
-      id,
-    };
+    return { message: 'Deleted', id };
   }
 
   async findByCategory(category: string) {
-    const data = await this.productsRepo.find({
-      where: { category },
-    });
+    const data = await this.repo.find({ where: { category } });
 
-    return {
-      message: 'Products by category',
-      count: data.length,
-      data,
-    };
+    return { message: 'By category', count: data.length, data };
   }
 
   async search(keyword: string) {
-    const data = await this.productsRepo.find({
+    const data = await this.repo.find({
       where: { name: ILike(`%${keyword}%`) },
     });
 
-    return {
-      message: 'Search results',
-      count: data.length,
-      data,
-    };
+    return { message: 'Search result', count: data.length, data };
   }
 
   async toggleActive(id: number) {
     const product = await this.findOne(id);
+    product.data.isActive = !product.data.isActive;
 
-    const updated = product.data;
-    updated.isActive = !updated.isActive;
+    await this.repo.save(product.data);
 
-    await this.productsRepo.save(updated);
-
-    return {
-      message: 'Product status toggled',
-      data: updated,
-    };
+    return { message: 'Toggled', data: product.data };
   }
 }
